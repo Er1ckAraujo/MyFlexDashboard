@@ -1,0 +1,185 @@
+---
+title: "Sera que a regiao contribui na formacao do preconceito sexista?"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: row
+    vertical_layout: fill
+    theme: cerulean
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+library(shiny)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(shiny)
+library(flexdashboard)
+library(magrittr)
+library(plotly)
+library(esquisse)
+library(gtsummary)
+
+base_ipea <- as_tibble(read.csv2("base_ipea.csv", stringsAsFactors = T)) # Lendo a base de dados
+
+```
+
+Analise por Regiao
+=======
+
+Inputs  {data-width=200 .sidebar}
+----------
+```{r}
+selectInput("Regiao", label = "Regiao onde foi realizada a entrevista:", 
+            choices = unique(base_ipea$regiao), selected = "SUDESTE")
+
+```
+
+**O absurdo é absurdo. Porém, depende!**
+
+É curioso observar como o movimento das opiniões acontecem 
+em função da região selecionada. Embora a maiorida dos 
+entrevistados tendam a concordar, é possível observar um 
+deslocamento na concordância de ambas afirmações.
+
+
+Row {data-width=650, .tabset}
+-----------------------------------------------------------------------
+
+### Da pra entender que um homem que cresceu em uma familia violenta agrida sua mulher
+
+```{r}
+library(ggplot2)
+library(plotly)
+
+renderPlotly({
+  grafico1 <- filter(base_ipea, regiao == input$Regiao) %>%
+  ggplot(.,aes(x = da.pra.entender.que.um.homem.que.cresceu.em.uma.familia.violenta.agrida.sua.mulher, fill = sexo)) +
+  geom_bar(position = "dodge") +
+  scale_fill_viridis_d(option = "cividis") +
+  labs(x = " ", y = "N° de Entrevistados") +
+  coord_flip() +
+  theme_bw()
+
+ggplotly(grafico1)
+})
+
+
+```
+
+### Tabela 1 (Resumo com todas regioes)
+
+```{r}
+library(gtsummary)
+
+tbl <- base_ipea %>% # TABELA 1
+  tbl_cross(row = sexo,
+    col = da.pra.entender.que.um.homem.que.cresceu.em.uma.familia.violenta.agrida.sua.mulher,
+    percent = "row")
+
+tbl
+```
+
+Row {data-width=650, .tabset}
+-----------------------------------------------------------------------
+
+### Se as mulheres soubessem se comportar haveriam menos estupros
+
+```{r}
+library(ggplot2)
+library(plotly)
+
+renderPlotly({
+  grafico2 <- filter(base_ipea, regiao == input$Regiao) %>%
+  ggplot(., aes(x = se.as.mulheres.soubessem.como.se.comportar..haveria.menos.estupros)) +
+  geom_bar(fill = "#093c6d") +
+  labs(x = " ", y = " ") +
+  coord_flip() +
+  theme_bw() +
+  facet_grid(vars(), vars(sexo))
+
+ggplotly(grafico2)
+})
+
+```
+
+### Tabela 2 (Resumo com todas regioes)
+
+```{r}
+library(gtsummary)
+
+tbl2 <- base_ipea %>% # TABELA 2
+  tbl_cross(row = sexo,
+    col = se.as.mulheres.soubessem.como.se.comportar..haveria.menos.estupros,
+    percent = "row")
+
+tbl2
+
+```
+
+Outras informacoes relevantes:
+================================
+
+**Representatividade?** A distribuição dos dados não é homogênea. A religião
+católica, por exemplo, tem um número expressivo de representantes em relação à
+outras religiões contempladas pela pesquisa. Assim como as raças indígena e 
+amarelo possuem as porções menos expressivas entre as pessoas entrevistadas.
+
+rows {data-width=200}
+-----------------------------------------------------------------------
+
+### Etinia
+
+```{r}
+
+library(ggplot2)
+library(plotly)
+
+etinias <- 
+  ggplot(base_ipea) +
+  aes(x = cor.ou.raca) +
+  geom_bar(fill = "#092e52") +
+  labs(x = " ", y = "N de Entrevistados") +
+  theme_bw()
+
+ggplotly(etinias)
+
+```
+
+### Religiao
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(forcats)
+
+Religiao <- base_ipea %>%
+  mutate(religiao = fct_lump(religiao, 2, other_level = "Outros")) # Reclassificacao do fator religiao para niveis menos gerais
+
+bar <- ggplot(Religiao, aes(x = factor(1) , fill = factor(religiao))) +
+  geom_bar(width = 1) +
+  labs(x = " ", y = "N de Entrevistados") +
+  theme_bw()
+
+ggplotly(bar)
+
+```
+
+columns {data-width=250}
+-------------------------------------------------------------
+### Idade 
+```{r}
+
+library(ggplot2)
+library(plotly)
+
+idade <- ggplot(base_ipea) +
+  aes(x = idade) +
+  geom_histogram(bins = 30L, fill = "#052f58") +
+  labs(x = " ", y = "N de Entrevistados") +
+  theme_bw()
+
+ggplotly(idade)
+```
+
