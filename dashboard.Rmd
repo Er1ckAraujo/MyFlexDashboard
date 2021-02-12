@@ -9,7 +9,6 @@ runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-
 library(shiny)
 library(tidyverse)
 library(dplyr)
@@ -20,9 +19,7 @@ library(magrittr)
 library(plotly)
 library(esquisse)
 library(gtsummary)
-
 base_ipea <- as_tibble(read.csv2("base_ipea.csv", stringsAsFactors = T)) # Lendo a base de dados
-
 ```
 
 Analise por Regiao
@@ -33,7 +30,6 @@ Inputs  {data-width=200 .sidebar}
 ```{r}
 selectInput("Regiao", label = "Regiao onde foi realizada a entrevista:", 
             choices = unique(base_ipea$regiao), selected = "SUDESTE")
-
 ```
 
 **O absurdo é absurdo. Porém, depende!**
@@ -52,32 +48,26 @@ Row {data-width=650, .tabset}
 ```{r}
 library(ggplot2)
 library(plotly)
-
 renderPlotly({
   grafico1 <- filter(base_ipea, regiao == input$Regiao) %>%
   ggplot(.,aes(x = da.pra.entender.que.um.homem.que.cresceu.em.uma.familia.violenta.agrida.sua.mulher, fill = sexo)) +
   geom_bar(position = "dodge") +
-  scale_fill_viridis_d(option = "cividis") +
+  #scale_fill_viridis_d(option = "cividis") +
   labs(x = " ", y = "N° de Entrevistados") +
   coord_flip() +
   theme_bw()
-
 ggplotly(grafico1)
 })
-
-
 ```
 
 ### Tabela 1 (Resumo com todas regioes)
 
 ```{r}
 library(gtsummary)
-
 tbl <- base_ipea %>% # TABELA 1
   tbl_cross(row = sexo,
     col = da.pra.entender.que.um.homem.que.cresceu.em.uma.familia.violenta.agrida.sua.mulher,
     percent = "row")
-
 tbl
 ```
 
@@ -89,33 +79,27 @@ Row {data-width=650, .tabset}
 ```{r}
 library(ggplot2)
 library(plotly)
-
 renderPlotly({
   grafico2 <- filter(base_ipea, regiao == input$Regiao) %>%
   ggplot(., aes(x = se.as.mulheres.soubessem.como.se.comportar..haveria.menos.estupros)) +
-  geom_bar(fill = "#093c6d") +
+  geom_bar(fill = "#FF3900") +
   labs(x = " ", y = " ") +
   coord_flip() +
   theme_bw() +
   facet_grid(vars(), vars(sexo))
-
 ggplotly(grafico2)
 })
-
 ```
 
 ### Tabela 2 (Resumo com todas regioes)
 
 ```{r}
 library(gtsummary)
-
 tbl2 <- base_ipea %>% # TABELA 2
   tbl_cross(row = sexo,
     col = se.as.mulheres.soubessem.como.se.comportar..haveria.menos.estupros,
     percent = "row")
-
 tbl2
-
 ```
 
 Outras informacoes relevantes:
@@ -126,60 +110,80 @@ católica, por exemplo, tem um número expressivo de representantes em relação
 outras religiões contempladas pela pesquisa. Assim como as raças indígena e 
 amarelo possuem as porções menos expressivas entre as pessoas entrevistadas.
 
-rows {data-width=200}
+rows {data-width=700}
 -----------------------------------------------------------------------
 
-### Etinia
+### **Etinias**
 
 ```{r}
 
-library(ggplot2)
-library(plotly)
-
 etinias <- 
-  ggplot(base_ipea) +
-  aes(x = cor.ou.raca) +
-  geom_bar(fill = "#092e52") +
-  labs(x = " ", y = "N de Entrevistados") +
+  ggplot(base_ipea, aes(x = cor.ou.raca, fill = regiao)) +
+  geom_bar(position = "dodge") +
+  #labs(x = " ", title = "Cor ou Raça") +
+  #ggtitle("Número de entrevistados")+
+  xlab(" ") +
+  ylab("N° de entrevistados")+
   theme_bw()
 
 ggplotly(etinias)
 
 ```
 
-### Religiao
+### **Religiao**
 
 ```{r}
-library(ggplot2)
-library(plotly)
-library(forcats)
 
-Religiao <- base_ipea %>%
-  mutate(religiao = fct_lump(religiao, 2, other_level = "Outros")) # Reclassificacao do fator religiao para niveis menos gerais
+base_ipea <- base_ipea %>%  mutate(religiao2 = fct_lump(religiao, 2, other_level = "Outros")) # Reclassificacao do fator religiao para niveis menos gerais
 
-bar <- ggplot(Religiao, aes(x = factor(1) , fill = factor(religiao))) +
-  geom_bar(width = 1) +
-  labs(x = " ", y = "N de Entrevistados") +
-  theme_bw()
 
-ggplotly(bar)
+df_pizza_porcent <- prop.table(table(base_ipea$religiao2)) # Criando uma tabela com as frequencias relativas das religioes
+df_pizza_porcent <- as.data.frame(df_pizza_porcent)
 
+
+grafico_pizza_iterativo = plot_ly(df_pizza_porcent, # plotando grafico interativo com plot_ly
+                                  labels = ~Var1, 
+                                  values = ~Freq, 
+                                  type = 'pie') #%>%
+  #layout(title = 'Frequencia relativa da Classe Social (%)')
+
+grafico_pizza_iterativo
 ```
 
 columns {data-width=250}
 -------------------------------------------------------------
-### Idade 
+### **Idade** 
+
 ```{r}
 
-library(ggplot2)
-library(plotly)
+# Separando os quartis
 
-idade <- ggplot(base_ipea) +
-  aes(x = idade) +
-  geom_histogram(bins = 30L, fill = "#052f58") +
-  labs(x = " ", y = "N de Entrevistados") +
+minimo <- min(base_ipea$idade)
+
+q1 <- quantile(base_ipea$idade, 0.25)
+
+q2 <- quantile(base_ipea$idade,0.5)
+
+q3 <- quantile(base_ipea$idade,0.75)
+
+maximo <- max(base_ipea$idade)
+
+# Criando uma nova coluna com as classes criadas
+
+base_ipea$classes_idade= 
+  cut(base_ipea$idade, breaks = c(minimo, q1, q2, q3, maximo),
+      labels = c("16-28", "28-41", "41-56", "56-88"),
+      include.lowest = T)
+
+# plotando o grafico
+
+grafico_hist <- ggplot(base_ipea,aes(x=classes_idade,fill= regiao)) + 
+  geom_bar(position = "dodge")+
+  #ggtitle("Grafico histograma da distribuicao do numero de entrevistados")+
+  xlab("Frequencia das idades por quartis") +
+  ylab("Frequencia simples") +
   theme_bw()
 
-ggplotly(idade)
-```
+ggplotly(grafico_hist)
 
+```
